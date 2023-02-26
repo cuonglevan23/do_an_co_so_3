@@ -1,22 +1,25 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter, Routes, Route} from "react-router-dom";
+// import {useAppContext} from "./context/useContext";
+import { ToastContainer } from "react-toastify";
+// page
 
-function App() {
+
+// modal qrCode
+// import {ModalQrCode} from "./components";
+
+const App = () => {
+  // const {dark, openModal, isQrCode} = useAppContext();
+  const name = "Cường"
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          Edit <code>src/App.js</code> {name}.
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+      
+      
       </header>
     </div>
   );

@@ -67,12 +67,12 @@ const Nav = () => {
       }
       setLoading(false);
      };
-     
+
       return (
-         {
-            
-         }
+            {
+
+            }
 
       );
-}
+};
 export default Nav;

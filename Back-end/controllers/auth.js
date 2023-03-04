@@ -1,4 +1,4 @@
-import User from '.././models/user';
+import User from '../models/user.js';
 import validator from 'validator';
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
@@ -181,6 +181,212 @@ const ForgotPassword = async (req, res) => {
     return res.status(400).json({ msg: "Something went wrong. Try again!" });
   }
 }
+
+const addFollower = async (req, res) => {
+  try{
+  const user = await User.findByIdAndUpdate(req.body.user,{
+    $addToSet: {
+      follower: req.user.userId,
+    },
+  });
+  if(!user){
+    return res.status(400).json({msg: "No user found!"});
+  }
+  next();
+  
+  }catch(error){
+    return res.status(400).json({msg: "Something went wrong. Try again!"});
+  }
+};
+const userFollower = async (req, res) => {
+  try{
+  const user = await User.findByIdAndUpdate(
+    req.user.userId,{
+      $addToSet: { following: req.body.userId},
+    },
+    { new: true},
+  );
+  if(!user){
+    return res.status(400).json({msg: "No user found!"});
+  }
+   res.status(200).json({msg: "Follow succes.", user});
+  }catch (error){
+   return res.status(400).json({msg:"Something went wrong. Try again!"});
+  }
+}
+const removeFollower = async (req, res)=>{
+  try {
+  const user = await User.findByIdAndUpdate(req.params.user,{
+    $pull: {
+      follower: req.user.userId,
+    },
+  });
+  if(!user){
+    return res.status(400).json({msg: "No user found!"});
+  }
+  next();
+  }catch(error){
+    return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  };
+};
+const userUnFollower = async (req, res) => {
+  try {
+      const user = await User.findByIdAndUpdate(
+          req.user.userId,
+          {
+              $pull: { following: req.body.userId },
+          },
+          { new: true }
+      );
+      if (!user) {
+          return res.status(400).json({ msg: "No user found!" });
+      }
+      res.status(200).json({ msg: "Unfollowed!.", user });
+  } catch (error) {
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const findPeople = async (req, res) => {
+  try{
+   const user = await User.findById(req.user.userId);
+   
+   if(!user){
+    return res.status(400).json({msg: "No user found!"});
+   }
+   let following = user.following;
+   const people = await User.find({
+    _id:{ $nin: following}
+   }) 
+   .select(
+    "-password -secret -email -following -follower -createdAt -updatedAlt"
+   )
+   .limit(10);
+   return res.status(200).json({ msg: "Find success", people });
+  }catch(error){
+    return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const userFollowing = async (req, res) => {
+ try {
+ const userId = req.params.id;
+ const user = await User.findById(UserId);
+ if(!user){
+  return res.status(400).json({msg: "No User found"});
+
+ }
+ let following = user.following;
+ const people = await User.find({
+  _id: { $in: following}
+ })
+ .select("-password -secret -email -following -follower -createdAlt -updatedAt")
+ .limit(100);
+
+ return res.status(200).json({ msg: "Find success", following: people, name: user.name});
+ }catch(error){
+  console.log(error);
+  return res.status(400).json({ msg: "Something went wrong. Try again!" });
+ }
+};
+
+const listUserFollower = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    // current user
+    const user = await User.findById(userId);
+    // array user follower
+    if (!user) {
+        return res.status(400).json({ msg: "No user found!" });
+    }
+    let follower = user.follower;
+    //follower.filter((f) => new mongoose.Types.ObjectId(f));
+
+    const people = await User.find({ _id: { $in: follower } })
+        .select(
+            "-password -secret -email -following -follower -createdAt -updatedAt"
+        )
+        .limit(100);
+    return res
+        .status(200)
+        .json({ msg: "Find success", follower: people, name: user.name });
+} catch (error) {
+    console.log(error);
+    return res.status(400).json({ msg: "Something went wrong. Try again!" });
+}
+};
+const searchUser = async (req, res) => {
+  const { query } = req.params;
+  if (!query) return;
+  try {
+      // $regex is special method from mongodb
+      // The i modify is used to preform case-insensitive matching
+      const search = await User.find({
+          $or: [{ name: { $regex: query, $options: "i" } }],
+      }).select(
+          "-password -secret -email -following -follower -createdAt -updatedAt"
+      );
+      return res.status(200).json({ msg: "ok", search });
+  } catch (error) {
+      console.log(error);
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const getInformationUser = async (req, res) => {
+  try {
+      const _id = req.params.id;
+      const user = await User.findById(_id).select("-password -secret");
+      if (!user) {
+          return res.status(400).json({ msg: "No user found!" });
+      }
+      return res.status(200).json({ user });
+  } catch (error) {
+      console.log(error);
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const allUsers = async (req, res) => {
+  try {
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 10;
+      const users = await User.find({})
+          .select("-password -secret")
+          .skip((page - 1) * perPage)
+          .sort({ createdAt: -1 })
+          .limit(perPage);
+      if (!users) {
+          return res.status(400).json({ msg: "No user found!" });
+      }
+      const numberUsers = await User.find({}).estimatedDocumentCount();
+      return res.status(200).json({ users, numberUsers });
+  } catch (error) {
+      console.log(error);
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const deleteUserWithAdmin = async (req, res) => {
+  try {
+      const userId = req.params.id;
+      const user = await User.findByIdAndDelete(userId);
+      if (!user) {
+          return res.status(400).json({ msg: "No user found." });
+      }
+      return res.status(200).json({ msg: "Deleted user." });
+  } catch (error) {
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
+
+const something = async (req, res) => {
+  try {
+      return res.status(200).json({ msg: "ok" });
+  } catch (error) {
+      return res.status(400).json({ msg: "Something went wrong. Try again!" });
+  }
+};
 
 export {
   register,
